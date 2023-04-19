@@ -38,9 +38,35 @@ public class Robot1236 extends AdvancedRobot {
 	}
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
-		//Turn towards scanned robot
-		turnRight(e.getBearing());
-		//Fire at scanned robot
+		// //Turn towards scanned robot
+		// turnRight(e.getBearing());
+		// //Fire at scanned robot
+		// fire(1);
+		
+		//Calculate the enemy's velocity, distance, and heading
+		double enemyVelocity = e.getVelocity();
+		double enemyDistance = e.getDistance();
+		double enemyHeading = e.getHeading();
+		
+		//Calculate the angle to the enemy
+		double absBearing = getHeadingRadians() + e.getBearingRadians();
+		
+		//Calculate the predicted enemy heading based on its current heading and velocity
+		double enemyHeadingPredicted = enemyHeading + enemyVelocity / enemyDistance * Math.sin(e.getHeadingRadians() - absBearing);
+		
+		//Calculate the predicted enemy x and y coordinates
+		double enemyX = getX() + enemyDistance * Math.sin(absBearing);
+		double enemyY = getY() + enemyDistance * Math.cos(absBearing);
+		double enemyXPredicted = enemyX + enemyVelocity / enemyDistance * Math.sin(enemyHeadingPredicted);
+		double enemyYPredicted = enemyY + enemyVelocity / enemyDistance * Math.cos(enemyHeadingPredicted);
+
+		//Calculate the angle to the predicted enemy location
+		double targetHeading = Math.atan2(enemyXPredicted - getX(), enemyYPredicted - getY());
+		
+		// Turn the gun to the predicted enemy location
+		turnGunRightRadians(Utils.normalRelativeAngle(targetHeading - getGunHeadingRadians()));
+
+		// Fire at the enemy
 		fire(1);
 	}
 }	
