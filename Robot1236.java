@@ -3,70 +3,60 @@ package robot1236;
 import robocode.*;
 import robocode.util.Utils;
 import java.util.Random;
-import robocode.util.Utils;
 
 import java.awt.Color;
 
 // API help : https://robocode.sourceforge.io/docs/robocode/robocode/Robot.html
 
 /**
- * Robot1236 - a robot by (your name here)
+ * Robot1236 - a robot by Group 2 GCL
  */
 public class Robot1236 extends AdvancedRobot {
 
-	private Random random = new Random();
-	private double moveDistance = 100;
+	//for stop and go strategy
+	private boolean movingForward;
+	private int moveCount;
 
 	public void run() {
-		// Set colors
+		//set colors
     	setColors(Color.yellow, Color.green, Color.red);
 
+		//move forward for 10 turns, then backward for 10, and repeat
     	while (true) {
-		moveRandomly();
+			setTurnRadarRight(Double.POSITIVE_INFINITY); //scan continuously
+			if (moveCount % 10 == 0) {
+				movingForward = !movingForward;
+				setAhead(movingForward ? 100 : -100); //move in short bursts
+			}
+			execute();
+			moveCount++;
 		}
 	}
 	
-	private void moveRandomly() {
-		ahead(moveDistance * (random.nextDouble() * 2 - 1));
-		turnRight(90 * (random.nextDouble() * 2 - 1));
-		execute();
-	}
-	
 	public void onHitWall(HitWallEvent e) {
-		//Reverse direction upon hitting a wall
-		moveDistance *= -1;
+		//randomly generate an angle between 45 and 135 degrees
+		double turnAngle = Math.toRadians((Math.random() * 90) + 45);
+		//randomly generate a distance to move forward betweem 50 and 150 degrees
+		double distance = (Math.random() * 100) + 50;
+		//if math random is less than 0.5 will randomly turn for right or left
+		if (Math.random() < 0.5) {
+			//turn right based on the random turnAngle
+			turnRightRadians(turnAngle);
+		} else {
+			//turn left based on the random turnAngle
+			turnLeftRadians(turnAngle);
+		}
+		//go ahead random distance
+		ahead(distance);
 	}
 	
-	public void onScannedRobot(ScannedRobotEvent e) {
-		// //Turn towards scanned robot
-		// turnRight(e.getBearing());
-		// //Fire at scanned robot
-		// fire(1);
-		
-		//Calculate the enemy's velocity, distance, and heading
-		double enemyVelocity = e.getVelocity();
-		double enemyDistance = e.getDistance();
-		double enemyHeading = e.getHeading();
-		
-		//Calculate the angle to the enemy
-		double absBearing = getHeadingRadians() + e.getBearingRadians();
-		
-		//Calculate the predicted enemy heading based on its current heading and velocity
-		double enemyHeadingPredicted = enemyHeading + enemyVelocity / enemyDistance * Math.sin(e.getHeadingRadians() - absBearing);
-		
-		//Calculate the predicted enemy x and y coordinates
-		double enemyX = getX() + enemyDistance * Math.sin(absBearing);
-		double enemyY = getY() + enemyDistance * Math.cos(absBearing);
-		double enemyXPredicted = enemyX + enemyVelocity / enemyDistance * Math.sin(enemyHeadingPredicted);
-		double enemyYPredicted = enemyY + enemyVelocity / enemyDistance * Math.cos(enemyHeadingPredicted);
-
-		//Calculate the angle to the predicted enemy location
-		double targetHeading = Math.atan2(enemyXPredicted - getX(), enemyYPredicted - getY());
-		
-		// Turn the gun to the predicted enemy location
-		turnGunRightRadians(Utils.normalRelativeAngle(targetHeading - getGunHeadingRadians()));
-
-		// Fire at the enemy
-		fire(1);
+	public void onScannedRobot(ScannedRobotEvent event) {
+		double angleToEnemy = getHeadingRadians() + event.getBearingRadians();
+        double radarTurn = Utils.normalRelativeAngle(angleToEnemy - getRadarHeadingRadians());
+        double gunTurn = Utils.normalRelativeAngle(angleToEnemy - getGunHeadingRadians());
+        
+        setTurnRadarRightRadians(radarTurn); //track enemy with radar
+        setTurnGunRightRadians(gunTurn); //aim gun at enemy
+        fire(1); //fire at enemy with a power of 1
 	}
-}	
+}
